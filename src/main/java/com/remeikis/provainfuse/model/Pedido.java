@@ -31,7 +31,7 @@ public class Pedido
     private String nome;
 
     @Column(nullable = false)
-    private float valor;
+    private double valor;
 
     @Column(nullable = false)
     private Integer quantidade;

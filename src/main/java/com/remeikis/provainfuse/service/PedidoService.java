@@ -10,6 +10,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,20 +42,25 @@ public class PedidoService
     private void verifyNumeroControle(List<Pedido> pedidos) throws BusinessException {
         List<Integer> ids = pedidos.stream()
             .map(Pedido::getNumeroControle)
-            .distinct()
             .collect(Collectors.toList());
+
+        // Verifica se foram informados números iguais nos novos pedidos
+        if(ids.stream().anyMatch(n -> Collections.frequency(ids, n) > 1))
+            throw new BusinessException(HttpStatus.BAD_REQUEST, "Informe números de controle diferentes para os novos pedidos");
 
         List<Pedido> pedidos2 = pedidoRepository.findAllById(ids);
 
+        // Se pedidos2 não estiver vazio, significa que já há pedido(s) registrado(s) com algum dos números dos novos pedidos
         if(!pedidos2.isEmpty()) {
-            String strIds = String.join(", ", pedidos2.stream()
+            // Cria String contendo sequência de IDs existentes (Ex.: "1, 2, 3")
+            String idsExistentes = String.join(", ", pedidos2.stream()
                 .map(Pedido::getNumeroControle)
                 .map(String::valueOf)
                 .collect(Collectors.toList())
             );
             String exceptionMsg = pedidos2.size() > 1
-                ? "Já existem pedidos com os números de controle " + strIds
-                : "Já existe um pedido com o número de controle " + strIds;
+                ? "Já existem pedidos com os números de controle " + idsExistentes
+                : "Já existe um pedido com o número de controle " + idsExistentes;
             throw new BusinessException(HttpStatus.BAD_REQUEST, exceptionMsg);
         }
     }
@@ -97,9 +103,9 @@ public class PedidoService
             if(p.getQuantidade() == null)
                 p.setQuantidade(1);
             else if(p.getQuantidade() >= 10)
-                p.setValor(p.getValor() * 1.1f);
+                p.setValor(p.getValor() * 1.1);
             else if(p.getQuantidade() > 5)
-                p.setValor(p.getValor() * 1.05f);
+                p.setValor(p.getValor() * 1.05);
 
             if(p.getDataCadastro() == null)
                 p.setDataCadastro(new Date());
@@ -112,7 +118,7 @@ public class PedidoService
         return pedidoRepository.findByDataCadastro(dataCadastro);
     }
 
-    public List<Pedido> findByIntervaloDataCadastro(Date de, Date ate) {
+    /*public List<Pedido> findByIntervaloDataCadastro(Date de, Date ate) {
         return pedidoRepository.findByIntervaloDataCadastro(de, ate);
-    }
+    }*/
 }
